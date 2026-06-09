@@ -1,4 +1,4 @@
-root@sbx-blue-logstash-vm-logs-2gpf:/home/ukondapureddy_solutions_corelogi/pci-logs-restore# cat logs-pci-restore.py
+#calculate size of logs-pci nonprod for 1year indices#
 from datetime import datetime
 import time
 from os import environ as env
