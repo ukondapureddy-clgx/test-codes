@@ -1,4 +1,4 @@
-#calculate size of logs-pci nonprod for 1year indices#
+#Logic for restoring logs-pci nonprod for 1year indices into a temp index#
 from datetime import datetime
 import time
 from os import environ as env
