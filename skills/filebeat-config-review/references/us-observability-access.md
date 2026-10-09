@@ -25,17 +25,16 @@ Beats may have their events dropped.
 |---|---|---|---|
 | VM logs (Filebeat / Winlogbeat) | PRD | `prd-logs-listener-us.solutions.corelogic.com:8080` | OLD: `vm-prd-logs-listener.solutions.corelogic.com:8080` |
 | VM logs (Filebeat / Winlogbeat) | NONPROD | `nonprd-logs-listener-us.solutions.corelogic.com:8080` | OLD: `vm-nonprd-logs-listener.solutions.corelogic.com:8080` |
-| VM logs (Filebeat / Winlogbeat) | SBX deployment | `logstash-metrics-sbx-usw1.solutions.corelogic.com:8080` | User supplied 2026-10-09; verify against the authoritative page when accessible |
 | VM metrics (Metricbeat) | PRD | `prd-metrics-listener-us.solutions.corelogic.com:8080` | `vm-metrics-listener.solutions.corelogic.com:8080` marked under development; all VM metrics go to production by default |
 | VM metrics (Metricbeat) | NONPROD | `nonprd-metrics-listener-us.solutions.corelogic.com:8080` | `vm-nonprd-metrics-listener.solutions.corelogic.com:8080` marked under development |
 | Infosec logs (Filebeat) | PRD | `prd-logs-listener-us.solutions.corelogic.com:8091` | Infosec deployment only |
 | Infosec logs | NONPROD | No endpoint listed | Do not invent one |
 
-Use the SBX deployment endpoint above for `sbx` and the generic NONPROD logs
-listener for `int`, `np`, `nonprod`, `nonprd`, `dev`, or `uat`; use PRD logs
-for `reg`, `dr`, `drg`, `prd`, or `mgt`, when the organization resolves to US.
-SBX repository checks use the NONPROD `release/int` branch, and SBX routing is
-classified as `nonprd` without changing the original `labels.environment: sbx`. These US
+Use the NONPROD logs listener for `int`, `np`, `nonprod`, `nonprd`, `dev`,
+`uat`, and `sbx`; use PRD logs for `reg`, `dr`, `drg`, `prd`, or `mgt`, when
+the organization resolves to US. SBX repository checks use the NONPROD
+`release/int` branch, and SBX routing is classified as `nonprd` without
+changing the original `labels.environment: sbx`. These US
 Beats endpoints do not establish AUS Beats endpoints. A hostname and port do not
 establish TLS or mTLS requirements; preserve existing approved TLS settings or
 require the user to supply them. Never infer plaintext from port 8080.

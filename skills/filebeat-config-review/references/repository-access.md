@@ -23,8 +23,8 @@ node .\scripts\resolve-context.js --env sbx --org common_services_us
 The helper outputs repository owner/name/URL, tier, branch, explicit Git ref,
 region candidates, and the known US logs endpoint. For SBX, it also reports the
 `nonprd` Logstash routing classification while preserving `labels.environment`
-as supplied, and resolves the user-supplied SBX US endpoint separately from the
-generic NONPROD listener. It does not download private
+as supplied. SBX uses the same NONPROD US logs listener as `int` and other
+NONPROD environments. It does not download private
 data, authenticate, validate labels against dictionaries, or prove deployment
 state. It works without test logs. `glb` returns US and AUS candidates; confirm
 scope unless already supplied. AUS endpoint is unknown, never a US fallback.
@@ -52,9 +52,9 @@ Do not use master or implicit default-branch content, even for missing files.
    and referenced Elasticsearch ingest pipelines. Check enablement/migration
    configuration: a stored pipeline file does not establish an active pipeline.
 4. Resolve the endpoint separately from the repository branch using
-   [us-observability-access.md](us-observability-access.md). SBX uses
-   `logstash-metrics-sbx-usw1.solutions.corelogic.com:8080` for US logs and
-   shares the NONPROD `release/int` IaC branch. On that ref, inspect the SBX
+   [us-observability-access.md](us-observability-access.md). SBX uses the
+   NONPROD `nonprd-logs-listener-us.solutions.corelogic.com:8080` US logs
+   endpoint and shares the NONPROD `release/int` IaC branch. On that ref, inspect the SBX
    deployment values (including `sbx-usc1 values.yml` when present) for
    nonprod topic subscriptions and VM log input/output pipelines. Trace the
    SBX label's `nonprd` routing classification through those nonprod pipelines;

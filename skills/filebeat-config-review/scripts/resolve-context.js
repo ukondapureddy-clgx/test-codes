@@ -41,12 +41,10 @@ function resolveContext(environment, organization) {
     endpoints: regions.map((region) => ({
       region,
       logs: region === "US"
-        ? environment.trim().toLowerCase() === "sbx"
-          ? "logstash-metrics-sbx-usw1.solutions.corelogic.com:8080"
-          : `${profile.tier === "PRD" ? "prd" : "nonprd"}-logs-listener-us.solutions.corelogic.com:8080`
+        ? `${profile.tier === "PRD" ? "prd" : "nonprd"}-logs-listener-us.solutions.corelogic.com:8080`
         : null,
     })),
-    endpoint_source: "references/us-observability-access.md (user supplied 2026-10-08); SBX endpoint supplied by user (2026-10-09)",
+    endpoint_source: "references/us-observability-access.md (user supplied 2026-10-08); SBX uses the NONPROD endpoint per user confirmation (2026-10-09)",
   };
 }
 

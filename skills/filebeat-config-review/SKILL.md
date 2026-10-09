@@ -124,23 +124,17 @@ mappings exist. Investigate it yourself.
 | int, np, nonprod, nonprd, dev, uat, sbx | NONPROD | release/int |
 | reg, dr, drg, prd, mgt | PRD | release/prd |
 
-- Normalize for lookup only. Keep emitted labels exactly as the user supplied them.
+- Normalize environment labels for lookup only; preserve the supplied labels in output.
 - Organization tags `us` and `aus` select region. `glb` is `REGION_SCOPE_REQUIRED` until the user
   confirms US, AUS, or both. Review each selected region separately.
-- Never use `master`, default-branch content, or another branch or region as a fallback.
-- SBX resolves to tier `NONPROD` and IaC branch `release/int`, the same branch as the other NONPROD
-  aliases. Its US Filebeat/Winlogbeat destination remains
-  `logstash-metrics-sbx-usw1.solutions.corelogic.com:8080`, not the generic
-  `nonprd-logs-listener-us` endpoint. This SBX endpoint was supplied by the user; retain that
-  provenance unless independently confirmed by the authoritative endpoint page.
-- For SBX downstream review, inspect the SBX deployment configuration on `release/int` (including
-  `sbx-usc1 values.yml` when present) for nonprod topic subscriptions and VM log input/output
-  pipelines. Follow the configured routing into the nonprod Logstash pipelines.
-- SBX may be classified as `nonprd` for Logstash routing. That routing classification must not
-  rewrite the original `labels.environment: sbx` in generated Filebeat configuration or reports.
-- Check the authoritative endpoint page when accessible. Otherwise use the
-  [stored US reference](references/us-observability-access.md) and disclose its provenance. Never
-  guess an endpoint and never substitute a US endpoint for AUS.
+- Never fall back to `master`, a default branch, or another branch or region.
+- SBX is NONPROD: use IaC branch `release/int` and the NONPROD US endpoint. Route it as `nonprd`,
+  but preserve `labels.environment: sbx`.
+- On `release/int`, check SBX deployment values (including `sbx-usc1 values.yml` when present)
+  and follow its nonprod-topic and VM-log pipelines.
+- Verify endpoints against the authoritative page or cite the
+  [stored US reference](references/us-observability-access.md). Never guess or substitute a US
+  endpoint for AUS.
 
 ---
 

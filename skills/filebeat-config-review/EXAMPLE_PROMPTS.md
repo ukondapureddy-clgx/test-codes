@@ -153,8 +153,8 @@ is built in. Users do not need to provide its link.
 
 Lookup is case-insensitive; emitted labels stay unchanged. No master/default
 branch or cross-branch fallback is permitted. `us` resolves US, `aus` resolves
-AUS, and `glb` requires US/AUS/both scope. SBX uses its SBX endpoint and shares
-the NONPROD IaC branch; downstream SBX routing is classified as `nonprd`.
+AUS, and `glb` requires US/AUS/both scope. SBX uses the same US endpoint and
+IaC branch as NONPROD; downstream SBX routing is classified as `nonprd`.
 Private repository access must already be authenticated; a URL grants no access.
 Missing access or branches are reported, not silently replaced.
 
