@@ -6,9 +6,8 @@ const { spawnSync } = require("node:child_process");
 const { resolveContext } = require("../scripts/resolve-context");
 
 for (const [aliases, tier, branch] of [
-  [["int", "np", "nonprod", "nonprd", "dev", "uat"], "NONPROD", "release/int"],
+  [["int", "np", "nonprod", "nonprd", "dev", "uat", "sbx"], "NONPROD", "release/int"],
   [["reg", "dr", "drg", "prd", "mgt"], "PRD", "release/prd"],
-  [["sbx"], "NONPROD", "release/sbx"],
 ]) {
   for (const alias of aliases) {
     const label = ` ${alias.toUpperCase()} `;
@@ -45,7 +44,7 @@ const script = path.join(__dirname, "..", "scripts", "resolve-context.js");
 const valid = spawnSync(process.execPath, [script, "--env", "sbx", "--org", "tax_us"], { encoding: "utf8" });
 assert.equal(valid.status, 0);
 const sbx = JSON.parse(valid.stdout);
-assert.equal(sbx.ref, "refs/heads/release/sbx");
+assert.equal(sbx.ref, "refs/heads/release/int");
 assert.equal(sbx.labels.environment, "sbx");
 assert.equal(sbx.routing_environment, "nonprd");
 assert.equal(sbx.endpoints[0].logs, "logstash-metrics-sbx-usw1.solutions.corelogic.com:8080");

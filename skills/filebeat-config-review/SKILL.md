@@ -121,23 +121,21 @@ mappings exist. Investigate it yourself.
 
 | Environment labels | Tier | IaC branch |
 |---|---|---|
-| int, np, nonprod, nonprd, dev, uat | NONPROD | release/int |
+| int, np, nonprod, nonprd, dev, uat, sbx | NONPROD | release/int |
 | reg, dr, drg, prd, mgt | PRD | release/prd |
-| sbx | NONPROD | release/sbx |
 
 - Normalize for lookup only. Keep emitted labels exactly as the user supplied them.
 - Organization tags `us` and `aus` select region. `glb` is `REGION_SCOPE_REQUIRED` until the user
   confirms US, AUS, or both. Review each selected region separately.
-- Never use `master`, default-branch content, or another branch or region as a fallback, including
-  when `release/sbx` is unavailable. Report the failure instead.
-- SBX resolves to tier `NONPROD` and repository branch `release/sbx`, but its US Filebeat/Winlogbeat
-  destination is `logstash-metrics-sbx-usw1.solutions.corelogic.com:8080`, not the generic
+- Never use `master`, default-branch content, or another branch or region as a fallback.
+- SBX resolves to tier `NONPROD` and IaC branch `release/int`, the same branch as the other NONPROD
+  aliases. Its US Filebeat/Winlogbeat destination remains
+  `logstash-metrics-sbx-usw1.solutions.corelogic.com:8080`, not the generic
   `nonprd-logs-listener-us` endpoint. This SBX endpoint was supplied by the user; retain that
   provenance unless independently confirmed by the authoritative endpoint page.
-- For SBX downstream review, inspect the SBX deployment configuration on `release/sbx` (including
-  `sbx-usc1 values.yml` when present) for the endpoint, nonprod topic subscriptions, and VM log
-  input/output pipelines. Follow the configured routing into the nonprod Logstash pipelines; do
-  not switch the IaC ref to `release/int`.
+- For SBX downstream review, inspect the SBX deployment configuration on `release/int` (including
+  `sbx-usc1 values.yml` when present) for nonprod topic subscriptions and VM log input/output
+  pipelines. Follow the configured routing into the nonprod Logstash pipelines.
 - SBX may be classified as `nonprd` for Logstash routing. That routing classification must not
   rewrite the original `labels.environment: sbx` in generated Filebeat configuration or reports.
 - Check the authoritative endpoint page when accessible. Otherwise use the
@@ -167,7 +165,7 @@ result is `ENVIRONMENT_UNRESOLVED` or `REGION_SCOPE_REQUIRED`.
 On the selected ref only, trace in this order:
 
 1. The selected deployment's enabled Logstash inputs and the port matching the resolved endpoint.
-   For SBX, inspect its `release/sbx` deployment values (including `sbx-usc1 values.yml` when
+   For SBX, inspect its `release/int` deployment values (including `sbx-usc1 values.yml` when
    present) and follow nonprod-topic/VM-log routing into the nonprod pipelines.
 2. Required-label validation and any dropped-log routing.
 3. Pipeline-to-pipeline dispatch, including the default branch for unlisted organizations.

@@ -7,13 +7,12 @@ Do not ask the user for this URL.
 
 | Environment aliases (case-insensitive lookup) | Tier | Required branch |
 |---|---|---|
-| int, np, nonprod, nonprd, dev, uat | NONPROD | release/int |
+| int, np, nonprod, nonprd, dev, uat, sbx | NONPROD | release/int |
 | reg, dr, drg, prd, mgt | PRD | release/prd |
-| sbx | NONPROD | release/sbx |
 
 Preserve original labels in generated configuration. Unknown environments fail
 resolution and require clarification. No master/default-branch access and no
-fallback to another release branch, including when release/sbx is unavailable.
+fallback to another release branch.
 
 ## Resolve, then fetch
 
@@ -36,7 +35,7 @@ Use authenticated GitHub tools to fetch with the returned ref, for example:
 owner: corelogic-private
 repo: platform_services_glb-elkmla-iac
 path: clgx-obs-configuration/terraform
-ref: refs/heads/release/sbx
+ref: refs/heads/release/int
 ```
 
 Always pass `ref` to every directory/file read. Alternatively, resolve the
@@ -55,12 +54,11 @@ Do not use master or implicit default-branch content, even for missing files.
 4. Resolve the endpoint separately from the repository branch using
    [us-observability-access.md](us-observability-access.md). SBX uses
    `logstash-metrics-sbx-usw1.solutions.corelogic.com:8080` for US logs and
-   `release/sbx` for repository inspection. On that ref, inspect the SBX
+   shares the NONPROD `release/int` IaC branch. On that ref, inspect the SBX
    deployment values (including `sbx-usc1 values.yml` when present) for
    nonprod topic subscriptions and VM log input/output pipelines. Trace the
    SBX label's `nonprd` routing classification through those nonprod pipelines;
-   do not change the original `labels.environment: sbx` or inspect
-   `release/int` as a substitute.
+   do not change the original `labels.environment: sbx`.
 5. If authentication, a branch, or runtime files are unavailable, report exactly
    what could not be checked. Keep generation possible with explicit review
    blockers and assign access/deployment verification to Platform/Cloud

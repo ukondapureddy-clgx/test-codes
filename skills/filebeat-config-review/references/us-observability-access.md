@@ -34,8 +34,8 @@ Beats may have their events dropped.
 Use the SBX deployment endpoint above for `sbx` and the generic NONPROD logs
 listener for `int`, `np`, `nonprod`, `nonprd`, `dev`, or `uat`; use PRD logs
 for `reg`, `dr`, `drg`, `prd`, or `mgt`, when the organization resolves to US.
-Sandbox repository checks use `release/sbx`, and SBX routing is classified as
-`nonprd` without changing the original `labels.environment: sbx`. These US
+SBX repository checks use the NONPROD `release/int` branch, and SBX routing is
+classified as `nonprd` without changing the original `labels.environment: sbx`. These US
 Beats endpoints do not establish AUS Beats endpoints. A hostname and port do not
 establish TLS or mTLS requirements; preserve existing approved TLS settings or
 require the user to supply them. Never infer plaintext from port 8080.

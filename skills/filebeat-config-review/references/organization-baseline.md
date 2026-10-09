@@ -27,15 +27,14 @@ Nginx. Resolve environment aliases from uploaded labels/configuration:
 
 | Environment label | Tier | Repository branch |
 |---|---|---|
-| `int`, `np`, `nonprod`, `nonprd`, `dev`, `uat` | NONPROD | `release/int` |
+| `int`, `np`, `nonprod`, `nonprd`, `dev`, `uat`, `sbx` | NONPROD | `release/int` |
 | `reg`, `dr`, `drg`, `prd`, `mgt` | PRD | `release/prd` |
-| `sbx` | NONPROD | `release/sbx` |
 
 Use [repository-access.md](repository-access.md) and the context resolver for
 explicit release refs. Never use `master`, a default branch, or another release
 branch as a fallback. SBX uses its specific US endpoint
-`logstash-metrics-sbx-usw1.solutions.corelogic.com:8080` and the `release/sbx`
-repo branch. Trace its configured `nonprd` routing into the nonprod pipelines;
+`logstash-metrics-sbx-usw1.solutions.corelogic.com:8080`, shares the NONPROD
+`release/int` repo branch, and routes through the configured `nonprd` pipelines;
 preserve `labels.environment: sbx`.
 
 Resolve region from the organization label's delimited tag (for example,

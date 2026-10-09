@@ -1,17 +1,12 @@
 #!/usr/bin/env node
 
 const ENVIRONMENTS = new Map([
-  ...["int", "np", "nonprod", "nonprd", "dev", "uat"].map((env) => [
+  ...["int", "np", "nonprod", "nonprd", "dev", "uat", "sbx"].map((env) => [
     env, { tier: "NONPROD", branch: "release/int" },
   ]),
   ...["reg", "dr", "drg", "prd", "mgt"].map((env) => [
     env, { tier: "PRD", branch: "release/prd" },
   ]),
-  ["sbx", {
-    tier: "NONPROD",
-    branch: "release/sbx",
-    routing_environment: "nonprd",
-  }],
 ]);
 
 function resolveContext(environment, organization) {
@@ -39,6 +34,7 @@ function resolveContext(environment, organization) {
       url: "https://github.com/corelogic-private/platform_services_glb-elkmla-iac",
     },
     ...profile,
+    ...(environment.trim().toLowerCase() === "sbx" ? { routing_environment: "nonprd" } : {}),
     ref: `refs/heads/${profile.branch}`,
     regions,
     requires_region_scope: tags[0] === "glb",

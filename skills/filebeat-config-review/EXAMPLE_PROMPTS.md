@@ -148,13 +148,13 @@ is built in. Users do not need to provide its link.
 
 | Labels used for lookup | Tier | Branch |
 |---|---|---|
-| int, np, nonprod, nonprd, dev, uat | NONPROD | release/int |
+| int, np, nonprod, nonprd, dev, uat, sbx | NONPROD | release/int |
 | reg, dr, drg, prd, mgt | PRD | release/prd |
-| sbx | NONPROD | release/sbx |
 
 Lookup is case-insensitive; emitted labels stay unchanged. No master/default
 branch or cross-branch fallback is permitted. `us` resolves US, `aus` resolves
-AUS, and `glb` requires US/AUS/both scope. Sandbox uses NONPROD ingestion.
+AUS, and `glb` requires US/AUS/both scope. SBX uses its SBX endpoint and shares
+the NONPROD IaC branch; downstream SBX routing is classified as `nonprd`.
 Private repository access must already be authenticated; a URL grants no access.
 Missing access or branches are reported, not silently replaced.
 
