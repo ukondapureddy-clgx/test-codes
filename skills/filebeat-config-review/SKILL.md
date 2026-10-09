@@ -129,10 +129,6 @@ mappings exist. Investigate it yourself.
 - Organization tags `us` and `aus` select region. `glb` is `REGION_SCOPE_REQUIRED` until the user
   confirms US, AUS, or both. Review each selected region separately.
 - Never fall back to `master`, a default branch, or another branch or region.
-- SBX is NONPROD: use IaC branch `release/int` and the NONPROD US endpoint. Route it as `nonprd`,
-  but preserve `labels.environment: sbx`.
-- On `release/int`, check SBX deployment values (including `sbx-usc1 values.yml` when present)
-  and follow its nonprod-topic and VM-log pipelines.
 - Verify endpoints against the authoritative page or cite the
   [stored US reference](references/us-observability-access.md). Never guess or substitute a US
   endpoint for AUS.
@@ -176,8 +172,6 @@ result is `ENVIRONMENT_UNRESOLVED` or `REGION_SCOPE_REQUIRED`.
 On the selected ref only, trace in this order:
 
 1. The selected deployment's enabled Logstash inputs and the port matching the resolved endpoint.
-   For SBX, inspect its `release/int` deployment values (including `sbx-usc1 values.yml` when
-   present) and follow nonprod-topic/VM-log routing into the nonprod pipelines.
 2. Required-label validation and any dropped-log routing.
 3. Pipeline-to-pipeline dispatch, including the default branch for unlisted organizations.
 4. The Elasticsearch output and actual destination topology: determine whether it writes to a

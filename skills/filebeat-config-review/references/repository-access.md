@@ -52,13 +52,9 @@ Do not use master or implicit default-branch content, even for missing files.
    and referenced Elasticsearch ingest pipelines. Check enablement/migration
    configuration: a stored pipeline file does not establish an active pipeline.
 4. Resolve the endpoint separately from the repository branch using
-   [us-observability-access.md](us-observability-access.md). SBX uses the
-   NONPROD `nonprd-logs-listener-us.solutions.corelogic.com:8080` US logs
-   endpoint and shares the NONPROD `release/int` IaC branch. On that ref, inspect the SBX
-   deployment values (including `sbx-usc1 values.yml` when present) for
-   nonprod topic subscriptions and VM log input/output pipelines. Trace the
-   SBX label's `nonprd` routing classification through those nonprod pipelines;
-   do not change the original `labels.environment: sbx`.
+   [us-observability-access.md](us-observability-access.md). Do not assume the
+   endpoint proves that a Logstash pipeline is enabled or establishes the
+   downstream Elasticsearch topology.
 5. If authentication, a branch, or runtime files are unavailable, report exactly
    what could not be checked. Keep generation possible with explicit review
    blockers and assign access/deployment verification to Platform/Cloud
