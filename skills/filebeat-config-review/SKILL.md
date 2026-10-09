@@ -21,7 +21,8 @@ never duplicates work that another layer already owns. Usage and example prompts
 
 ## Scope and safety guardrails
 
-- This skill is advisory and generative. It produces configuration text and review findings; it
+- This skill is advisory and generative. It returns the configuration and review findings in chat
+  and saves the resulting Filebeat/Winlogbeat configuration as a file in the current workspace; it
   does not deploy anything.
 - Never contact live outputs, send samples to a production cluster, deploy a configuration, or
   restart a service without explicit user approval.
@@ -219,10 +220,16 @@ never in a fictional native Filebeat processor.
 - Add a timezone override only when genuinely needed, not for offset-bearing timestamps, correct
   module-local handling, verified downstream timezone handling, or timestamp-free logs. Without a
   source timestamp, explain collection-time semantics.
+- Save the complete resulting configuration to the current workspace root, in addition to including
+  it in the chat response. Use `filebeat.generated.yml` or `winlogbeat.generated.yml`; append `.j2`
+  for a requested Jinja template. Never overwrite an existing file: choose the next unused numbered
+  name (for example, `filebeat.generated-2.yml`) and report the saved path. If no workspace is open
+  or unresolved blockers prevent producing a configuration, do not create a file; state why.
 
 **Step 5 — Return the three-section response**
 
-Use the output format below, in that order, with no section omitted.
+Use the output format below, in that order, with no section omitted. Include the configuration
+file's saved path in the chat response.
 
 **Step 6 — Validate safely and report honestly**
 

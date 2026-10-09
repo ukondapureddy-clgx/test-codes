@@ -2,6 +2,12 @@
 
 Use three main response sections in the order below. Put supporting review
 detail under section 3 rather than repeating the configuration.
+Return all three sections in the chat response and save the complete section 1
+configuration as a file in the current workspace root. Use
+`filebeat.generated.yml` or `winlogbeat.generated.yml` (add `.j2` for a
+requested Jinja template). Never overwrite an existing file; select the next
+unused numbered name and report the saved path. If no workspace is open or
+blockers prevent producing a configuration, explain why no file was created.
 
 ## 1. Configuration template
 
