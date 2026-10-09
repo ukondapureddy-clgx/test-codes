@@ -24,7 +24,7 @@
 | FB020 | High | Grok belongs in an ingest pipeline or Logstash filter, not a fictional native Filebeat processor. |
 | FB021 | Medium | Use current samples over stored references; report source evidence and unavailable memory/files honestly. |
 | FB022 | High | Flag conflicting application/environment labels or output destinations; confirm the intended profile before deployment. |
-| FB023 | High | Resolve aliases using the context resolver: NONPROD uses `release/int`, PRD uses `release/prd`, and sbx uses `release/sbx` with NONPROD endpoints. Inspect only the explicit selected ref; never use master/default-branch evidence or another branch as fallback. |
+| FB023 | High | Resolve aliases using the context resolver: NONPROD uses `release/int`, PRD uses `release/prd`, and sbx uses `release/sbx` with its specific `logstash-metrics-sbx-usw1.solutions.corelogic.com:8080` US endpoint. Trace SBX routing classified as `nonprd` into its nonprod pipelines without rewriting the original `labels.environment: sbx`. Inspect only the explicit selected ref; never use master/default-branch evidence or another branch as fallback. |
 | FB024 | High | Compare sample-derived field types to the matching existing mapping; recommend mapping missing fields and numeric conversion for numeric values, and flag incompatible existing types with a safe migration path. |
 | FB025 | High | Trace applicable Logstash and ingest pipelines before adding Filebeat parsing; identify ownership of parsing, conversion, timestamps, and routing, and distinguish repository evidence from deployed state. |
 | FB026 | Medium | Reuse supplied templates and labels, ask only for missing details one question at a time, and resolve US/AUS from organization tags; clarify deployment scope for glb. |

@@ -130,7 +130,16 @@ mappings exist. Investigate it yourself.
   confirms US, AUS, or both. Review each selected region separately.
 - Never use `master`, default-branch content, or another branch or region as a fallback, including
   when `release/sbx` is unavailable. Report the failure instead.
-- Sandbox uses NONPROD ingestion endpoints while its repository branch is `release/sbx`.
+- SBX resolves to tier `NONPROD` and repository branch `release/sbx`, but its US Filebeat/Winlogbeat
+  destination is `logstash-metrics-sbx-usw1.solutions.corelogic.com:8080`, not the generic
+  `nonprd-logs-listener-us` endpoint. This SBX endpoint was supplied by the user; retain that
+  provenance unless independently confirmed by the authoritative endpoint page.
+- For SBX downstream review, inspect the SBX deployment configuration on `release/sbx` (including
+  `sbx-usc1 values.yml` when present) for the endpoint, nonprod topic subscriptions, and VM log
+  input/output pipelines. Follow the configured routing into the nonprod Logstash pipelines; do
+  not switch the IaC ref to `release/int`.
+- SBX may be classified as `nonprd` for Logstash routing. That routing classification must not
+  rewrite the original `labels.environment: sbx` in generated Filebeat configuration or reports.
 - Check the authoritative endpoint page when accessible. Otherwise use the
   [stored US reference](references/us-observability-access.md) and disclose its provenance. Never
   guess an endpoint and never substitute a US endpoint for AUS.
@@ -149,18 +158,22 @@ than guessing.
 
 **Step 2 — Resolve environment, region, and endpoint**
 
-Run `resolve-context.js`. Record the tier, branch, explicit ref, region, and endpoint. Stop and ask
-if the result is `ENVIRONMENT_UNRESOLVED` or `REGION_SCOPE_REQUIRED`.
+Run `resolve-context.js`. Record the tier, branch, explicit ref, region, endpoint, and any distinct
+Logstash routing classification. Keep the emitted environment label unchanged. Stop and ask if the
+result is `ENVIRONMENT_UNRESOLVED` or `REGION_SCOPE_REQUIRED`.
 
 **Step 3 — Trace downstream before adding any parsing**
 
 On the selected ref only, trace in this order:
 
-1. Enabled Logstash inputs and the port matching the resolved endpoint.
+1. The selected deployment's enabled Logstash inputs and the port matching the resolved endpoint.
+   For SBX, inspect its `release/sbx` deployment values (including `sbx-usc1 values.yml` when
+   present) and follow nonprod-topic/VM-log routing into the nonprod pipelines.
 2. Required-label validation and any dropped-log routing.
 3. Pipeline-to-pipeline dispatch, including the default branch for unlisted organizations.
-4. The Elasticsearch output: index or data stream, and whether
-   `pipeline => "%{[@metadata][pipeline]}"` is set.
+4. The Elasticsearch output and actual destination topology: determine whether it writes to a
+   legacy index/ILM route or a data stream, and record the concrete index/data-stream naming and
+   routing conditions. Check whether `pipeline => "%{[@metadata][pipeline]}"` is set.
 5. `index_templates.tf`, `componenttemplates.tf`, and the regional `spaces.csv` entry to find the
    applicable component templates.
 6. The component mappings themselves, including `dynamic` and the type of every field the
@@ -170,7 +183,9 @@ Then establish **who owns** parsing, placeholder cleanup, numeric conversion, ti
 routing. Compare expected fields and types against the matching component mappings. HTTP status
 codes must be numeric (`long`); flag any incompatible existing type. With `dynamic: false`, explain
 that unmapped values may remain in `_source` without being searchable. Separate template changes for
-new indices, compatible existing-index updates, and historical reindexing.
+new indices, compatible existing-index updates, and historical reindexing. Record the topology result
+as legacy index/ILM, data stream, or `UNVERIFIED`; do not infer it from the endpoint, labels, or
+template names alone.
 
 Cite the branch and every file checked.
 
@@ -186,8 +201,13 @@ never in a fictional native Filebeat processor.
 - Bound multiline aggregation and make parse failures observable.
 - Fill in concrete labels and endpoints. Use fail-fast `${VAR:?explanation}` for required unknown
   runtime values.
-- Compare output settings and all four labels against the organization baseline. Preserve legacy
-  index and ILM routing; add data-stream metadata only for an agreed, supported topology.
+- Make the proposed Filebeat configuration consistent with the traced downstream topology. For a
+  verified legacy index/ILM route, preserve its routing and do not add data-stream metadata. Add
+  `data_stream.*` fields and `event.dataset` only when a verified, supported downstream data-stream
+  route requires and consumes them; confirm the expected values against its routing and templates.
+  If topology is `UNVERIFIED`, do not assume or introduce a data-stream route: preserve confirmed
+  settings, disclose the uncertainty, and mark any deployment dependency as a `BLOCKER`.
+- Compare output settings and all four labels against the organization baseline.
 - Add a timezone override only when genuinely needed, not for offset-bearing timestamps, correct
   module-local handling, verified downstream timezone handling, or timestamp-free logs. Without a
   source timestamp, explain collection-time semantics.
@@ -220,7 +240,9 @@ failures and multiline event counts without hiding them. With no samples, state 
 
 ## 3. Suggestions
 
-**Routing traced:** <input pipeline> -> <filter pipeline> -> <index or data stream>
+**Routing traced:** <input pipeline> -> <filter pipeline> -> <legacy index/ILM or data stream>
+Topology: <verified legacy index/ILM | verified data stream | UNVERIFIED>. Filebeat
+`data_stream.*` / `event.dataset` decision: <settings and evidence, or why omitted>.
 Branch checked: <release ref>. Files checked: <list>.
 
 | Processor / parser | Downstream equivalent? | Action |

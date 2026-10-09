@@ -33,7 +33,10 @@ Nginx. Resolve environment aliases from uploaded labels/configuration:
 
 Use [repository-access.md](repository-access.md) and the context resolver for
 explicit release refs. Never use `master`, a default branch, or another release
-branch as a fallback. Sandbox uses the NONPROD endpoint, not the INT repo branch.
+branch as a fallback. SBX uses its specific US endpoint
+`logstash-metrics-sbx-usw1.solutions.corelogic.com:8080` and the `release/sbx`
+repo branch. Trace its configured `nonprd` routing into the nonprod pipelines;
+preserve `labels.environment: sbx`.
 
 Resolve region from the organization label's delimited tag (for example,
 `tax-us`, `tax_us`, or an equivalent `aus`/`glb` tag):

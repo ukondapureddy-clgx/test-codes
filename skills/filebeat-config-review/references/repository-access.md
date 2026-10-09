@@ -22,7 +22,10 @@ node .\scripts\resolve-context.js --env sbx --org common_services_us
 ```
 
 The helper outputs repository owner/name/URL, tier, branch, explicit Git ref,
-region candidates, and the known US logs endpoint. It does not download private
+region candidates, and the known US logs endpoint. For SBX, it also reports the
+`nonprd` Logstash routing classification while preserving `labels.environment`
+as supplied, and resolves the user-supplied SBX US endpoint separately from the
+generic NONPROD listener. It does not download private
 data, authenticate, validate labels against dictionaries, or prove deployment
 state. It works without test logs. `glb` returns US and AUS candidates; confirm
 scope unless already supplied. AUS endpoint is unknown, never a US fallback.
@@ -49,9 +52,15 @@ Do not use master or implicit default-branch content, even for missing files.
 3. Trace enabled Logstash inputs, label dictionaries, pipeline links, outputs,
    and referenced Elasticsearch ingest pipelines. Check enablement/migration
    configuration: a stored pipeline file does not establish an active pipeline.
-4. Resolve the endpoint separately by tier/region using
-   [us-observability-access.md](us-observability-access.md). sbx uses NONPROD
-   US logs while its repository branch is release/sbx.
+4. Resolve the endpoint separately from the repository branch using
+   [us-observability-access.md](us-observability-access.md). SBX uses
+   `logstash-metrics-sbx-usw1.solutions.corelogic.com:8080` for US logs and
+   `release/sbx` for repository inspection. On that ref, inspect the SBX
+   deployment values (including `sbx-usc1 values.yml` when present) for
+   nonprod topic subscriptions and VM log input/output pipelines. Trace the
+   SBX label's `nonprd` routing classification through those nonprod pipelines;
+   do not change the original `labels.environment: sbx` or inspect
+   `release/int` as a substitute.
 5. If authentication, a branch, or runtime files are unavailable, report exactly
    what could not be checked. Keep generation possible with explicit review
    blockers and assign access/deployment verification to Platform/Cloud

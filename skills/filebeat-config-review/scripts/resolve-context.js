@@ -7,7 +7,11 @@ const ENVIRONMENTS = new Map([
   ...["reg", "dr", "drg", "prd", "mgt"].map((env) => [
     env, { tier: "PRD", branch: "release/prd" },
   ]),
-  ["sbx", { tier: "NONPROD", branch: "release/sbx" }],
+  ["sbx", {
+    tier: "NONPROD",
+    branch: "release/sbx",
+    routing_environment: "nonprd",
+  }],
 ]);
 
 function resolveContext(environment, organization) {
@@ -41,10 +45,12 @@ function resolveContext(environment, organization) {
     endpoints: regions.map((region) => ({
       region,
       logs: region === "US"
-        ? `${profile.tier === "PRD" ? "prd" : "nonprd"}-logs-listener-us.solutions.corelogic.com:8080`
+        ? environment.trim().toLowerCase() === "sbx"
+          ? "logstash-metrics-sbx-usw1.solutions.corelogic.com:8080"
+          : `${profile.tier === "PRD" ? "prd" : "nonprd"}-logs-listener-us.solutions.corelogic.com:8080`
         : null,
     })),
-    endpoint_source: "references/us-observability-access.md (user supplied 2026-10-08)",
+    endpoint_source: "references/us-observability-access.md (user supplied 2026-10-08); SBX endpoint supplied by user (2026-10-09)",
   };
 }
 
