@@ -1,0 +1,6 @@
+processors:
+  - dissect:
+      when.equals.fileset.name: access
+      tokenizer: "%{iis.access.date} %{iis.access.time} %{iis.access.site_name} %{iis.access.server_name} %{destination.address} %{http.request.method} %{url.path} %{url.query} %{destination.port} %{user.name} %{source.address} %{http.version} %{user_agent.original} %{iis.access.cookie} %{http.request.referrer} %{destination.domain} %{http.response.status_code} %{iis.access.sub_status} %{iis.access.win32_status} %{http.response.body.bytes} %{http.request.body.bytes} %{iis.time_taken} %{iis.x_forwarded_for}"
+      field: message
+      target_prefix: ""

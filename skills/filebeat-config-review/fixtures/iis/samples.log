@@ -1,0 +1,23 @@
+#Software: Microsoft Internet Information Services 10.0
+#Version: 1.0
+#Date: 2026-09-09 14:22:01
+#Fields: date time s-ip cs-method cs-uri-stem cs-uri-query s-port cs-username c-ip cs(User-Agent) cs(Referer) sc-status sc-substatus sc-win32-status time-taken
+2026-09-09 14:22:01 10.0.0.15 GET /index.html - 80 - 192.168.1.105 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64) - 200 0 0 15
+2026-09-09 14:22:05 10.0.0.15 POST /api/v1/login - 443 john.doe 192.168.1.105 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64) https://example.com/login 200 0 0 45
+
+#Software: Microsoft HTTP API Version 2.0
+#Version: 1.0
+#Date: 2026-09-09 14:23:00
+#Fields: date time c-ip c-port s-ip s-port cs-version cs-method cs-uri sc-status s-siteid s-reason s-queuename
+2026-09-09 14:23:01 192.168.1.105 51234 10.0.0.15 80 HTTP/1.1 GET / - 503 1 AppOffline -
+2026-09-09 14:23:15 192.168.1.112 51420 10.0.0.15 443 HTTP/1.1 POST /api/upload - 400 1 RequestLength -
+
+Log Name:      Application
+Source:        WAS
+Date:          9/9/2026 2:24:10 PM
+Event ID:      5002
+Task Category: None
+Level:         Error
+Computer:      WEB-SRV-01.domain.com
+Description:
+Application pool 'DefaultAppPool' is being automatically disabled.
