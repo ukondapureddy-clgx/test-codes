@@ -148,11 +148,27 @@ mappings exist. Investigate it yourself.
 
 **Step 1 — Collect what the user already provided**
 
-Reuse supplied labels, samples, and templates. Determine create versus review. Standard system logs
-need no samples: use the Linux system module for text logs, supported journald collection for
-journal-only sources, and Winlogbeat or the Windows integration for native Windows events. For
-custom parsing, identify each sample's category, format, and producer, and mark uncertainty rather
-than guessing.
+Start with the information in the request rather than asking the user to repeat it. Carry forward
+the organization, space, environment, and application labels exactly as supplied. If the user
+provides an existing Filebeat/Winlogbeat configuration or template and asks for a review or
+modification, treat that as the source to review: preserve its relevant settings and requested
+Jinja style, and call out uncertainties or conflicts. If they ask for a new configuration and
+provide no existing one, create a new configuration instead of treating that as a review. When the
+intent is unclear, infer it from the request; ask only if that choice would change the work.
+
+Samples are needed to design or assess a **custom parser**, not to select a standard collector. For
+custom parsing, use the user's current representative samples or an authoritative format header;
+identify the log category, format, and producing application or component. Prefer current supplied
+samples over stored fixtures or older examples. If evidence is incomplete or inconsistent, state
+what is uncertain rather than inventing a format or parser.
+
+For standard operating-system logs, select the collector based on the source and log interface;
+do not require samples just to make that choice. Use the Linux system module for standard text
+syslog/auth files, a journald-capable collection method supported by the target stack for logs
+available only through the systemd journal, and Winlogbeat or the Windows integration for native
+Windows Event Logs. A request to parse a nonstandard application file is not automatically a
+standard system-log case; obtain representative samples or a format header before designing its
+custom parsing.
 
 **Step 2 — Resolve environment, region, and endpoint**
 
