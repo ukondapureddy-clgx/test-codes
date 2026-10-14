@@ -183,8 +183,7 @@ On the selected ref only, trace in this order:
    configuration produces.
 
 Then establish **who owns** parsing, placeholder cleanup, numeric conversion, and
-routing. Do not inspect, validate, or report on the timestamp field or timezone handling; that is
-out of scope for this skill (see FB031). Compare expected fields and types against the matching
+routing. Compare expected fields and types against the matching
 component mappings. HTTP status
 codes must be numeric (`long`); flag any incompatible existing type. With `dynamic: false`, explain
 that unmapped values may remain in `_source` without being searchable. Separate template changes for
