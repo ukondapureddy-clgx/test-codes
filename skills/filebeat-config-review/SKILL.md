@@ -219,8 +219,7 @@ never in a fictional native Filebeat processor.
 - Compare output settings and all four labels against the organization baseline.
 - Never add a timestamp or timezone processor, override, or conversion to the Filebeat
   configuration, and do not suggest one. Leave `@timestamp` to the default behavior (ingestion
-  time, or a module's built-in timestamp handling). Do not inspect, validate, or comment on the
-  timestamp field at all; it is entirely out of scope for this skill.
+  time, or a module's built-in timestamp handling).
 - Save the complete resulting configuration to the current workspace root, in addition to including
   it in the chat response. Use `filebeat.generated.yml` or `winlogbeat.generated.yml`; append `.j2`
   for a requested Jinja template. Never overwrite an existing file: choose the next unused numbered
