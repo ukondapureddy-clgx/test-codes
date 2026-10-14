@@ -54,20 +54,6 @@ Use these exact values when reporting evidence and findings:
 Do not substitute synonyms. In particular, never write "missing" when the correct status is
 `UNVERIFIED`.
 
-## Evidence prerequisites
-
-Confirm these before producing findings:
-
-- The environment label resolves to exactly one tier and one release branch. An unknown label is
-  `ENVIRONMENT_UNRESOLVED`, not a guess.
-- Every repository read uses the explicit selected release ref or its pinned SHA. Branchless code
-  search may discover candidate paths, but refetch each candidate on the selected ref before using it.
-- A module being enabled does not prove its ingest pipeline runs. For Logstash output, the
-  Elasticsearch output must set `pipeline => "%{[@metadata][pipeline]}"` or module parsing never executes.
-- Custom parsing requires representative samples or an authoritative format header. Standard system
-  logs do not.
-- An endpoint does not establish TLS mode. Resolve them separately.
-
 ---
 
 ## How to invoke
