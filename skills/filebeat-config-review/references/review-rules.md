@@ -25,14 +25,14 @@
 | FB021 | Medium | Use current samples over stored references; report source evidence and unavailable memory/files honestly. |
 | FB022 | High | Flag conflicting application/environment labels or output destinations; confirm the intended profile before deployment. |
 | FB023 | High | Resolve aliases using the context resolver: NONPROD (including sbx) uses `release/int` and the NONPROD US endpoint `nonprd-logs-listener-us.solutions.corelogic.com:8080`; PRD uses `release/prd`. Trace SBX routing classified as `nonprd` into its nonprod pipelines without rewriting the original `labels.environment: sbx`. Inspect only the explicit selected ref; never use master/default-branch evidence or another branch as fallback. |
-| FB024 | High | Compare sample-derived field types to the matching existing mapping; recommend mapping missing fields and numeric conversion for numeric values, and flag incompatible existing types with a safe migration path. |
-| FB025 | High | Trace applicable Logstash and ingest pipelines before adding Filebeat parsing; identify ownership of parsing, conversion, timestamps, and routing, and distinguish repository evidence from deployed state. |
+| FB024 | High | Compare sample-derived field types to the matching existing mapping; report missing fields and type mismatches with a recommended fix in the Mapping comparison table for the user/operations team to apply at the mapping layer. Do not add Filebeat renaming/conversion processors solely to align with the mapping. |
+| FB025 | High | Trace applicable Logstash and ingest pipelines before adding Filebeat parsing; identify ownership of parsing, conversion, and routing, and distinguish repository evidence from deployed state. Timestamp/timezone ownership is out of scope (see FB031). |
 | FB026 | Medium | Reuse supplied templates and labels, ask only for missing details one question at a time, and resolve US/AUS from organization tags; clarify deployment scope for glb. |
 | FB027 | Medium | Generate the simplest complete configuration; reuse verified downstream processing, avoid unnecessary scripts, and preserve legacy routing unless a migration is explicitly agreed. |
 | FB028 | High | Return complete deployable-format configuration first, a user-settings table second, and log-based suggestions third; separate application-user settings from platform-team actions and distinguish startup requirements/end-to-end blockers from verified readiness. |
 | FB029 | Medium | For standard system logs without samples, generate from labels and the established OS/source using supported collection; ask only for OS/source if unknown, not mandatory test logs. |
 | FB030 | High | Use the built-in IaC URL and explicit environment-selected release ref; never ask users for the IaC URL. Report authentication/missing-path failures rather than silently switching branches. |
-| FB031 | Medium | Do not add an explicit timezone override when timestamps contain offsets, correct module local-time handling suffices, verified downstream timezone handling owns it, or logs have no timestamp. |
+| FB031 | Medium | Never add a timestamp or timezone processor, override, or conversion to the Filebeat configuration, and do not suggest adding one. Do not inspect, validate, or comment on the timestamp field at all; it is entirely out of scope for this skill. |
 
 ## Output topology
 

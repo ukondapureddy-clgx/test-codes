@@ -182,8 +182,10 @@ On the selected ref only, trace in this order:
 6. The component mappings themselves, including `dynamic` and the type of every field the
    configuration produces.
 
-Then establish **who owns** parsing, placeholder cleanup, numeric conversion, timestamps, and
-routing. Compare expected fields and types against the matching component mappings. HTTP status
+Then establish **who owns** parsing, placeholder cleanup, numeric conversion, and
+routing. Do not inspect, validate, or report on the timestamp field or timezone handling; that is
+out of scope for this skill (see FB031). Compare expected fields and types against the matching
+component mappings. HTTP status
 codes must be numeric (`long`); flag any incompatible existing type. With `dynamic: false`, explain
 that unmapped values may remain in `_source` without being searchable. Separate template changes for
 new indices, compatible existing-index updates, and historical reindexing. Record the topology result
@@ -210,10 +212,16 @@ never in a fictional native Filebeat processor.
   route requires and consumes them; confirm the expected values against its routing and templates.
   If topology is `UNVERIFIED`, do not assume or introduce a data-stream route: preserve confirmed
   settings, disclose the uncertainty, and mark any deployment dependency as a `BLOCKER`.
+- Keep the generated configuration simple. Do not add `rename`, `copy_fields`, `convert`, or similar
+  processors whose only purpose is to align produced field names/types with an existing or missing
+  Elasticsearch mapping. Mapping gaps, type mismatches, and field-naming adjustments belong in the
+  Mapping comparison table and `PLATFORM_ACTION`/suggestion notes for the user or operations team to
+  review and apply, not as processors baked into the Filebeat config.
 - Compare output settings and all four labels against the organization baseline.
-- Add a timezone override only when genuinely needed, not for offset-bearing timestamps, correct
-  module-local handling, verified downstream timezone handling, or timestamp-free logs. Without a
-  source timestamp, explain collection-time semantics.
+- Never add a timestamp or timezone processor, override, or conversion to the Filebeat
+  configuration, and do not suggest one. Leave `@timestamp` to the default behavior (ingestion
+  time, or a module's built-in timestamp handling). Do not inspect, validate, or comment on the
+  timestamp field at all; it is entirely out of scope for this skill.
 - Save the complete resulting configuration to the current workspace root, in addition to including
   it in the chat response. Use `filebeat.generated.yml` or `winlogbeat.generated.yml`; append `.j2`
   for a requested Jinja template. Never overwrite an existing file: choose the next unused numbered
@@ -290,6 +298,9 @@ detail under section 3 rather than repeating the configuration.
 - Numeric placeholders such as `-` will reject a document against a `long` mapping. Normalize them
   before conversion.
 - Report sample and header column-count inconsistencies rather than silently accepting them.
+- Do not add field-renaming, copying, or type-conversion processors solely to match an existing or
+  missing Elasticsearch mapping. Note the mismatch and recommended fix in the Mapping comparison
+  table instead; let the user or operations team decide whether to adjust the mapping or the config.
 - Detailed rule IDs `FB001`–`FB031` live in [review-rules.md](references/review-rules.md). Cite them
   in findings so reviewers can reference a specific rule.
 

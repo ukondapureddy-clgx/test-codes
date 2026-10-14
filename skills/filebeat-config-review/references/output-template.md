@@ -17,8 +17,9 @@ environment/keystore variables for missing runtime settings. Reserve Jinja for
 requested templates. Required variables deliberately fail startup if unset.
 Do not equate runnable format with verified end-to-end deployment readiness.
 
-Preserve verified parsing ownership and routing. Do not add unnecessary timezone
-overrides or duplicate Dissect processing. If a required endpoint cannot be
+Preserve verified parsing ownership and routing. Never add, inspect, validate, or comment on a
+timestamp/timezone processor, override, or conversion; this is entirely out of scope. Do not
+duplicate Dissect processing. If a required endpoint cannot be
 resolved, report that blocker and require it explicitly rather than guessing.
 
 ## 2. What the user must add
@@ -37,7 +38,7 @@ Separate optional improvements from blocking TLS, pipeline dispatch, label
 registration, mapping, source permissions, and version requirements. State
 what was inspected versus assumed or not executed.
 When samples exist, connect suggestions to the actual format, fields/types,
-timestamps, and multiline behavior. Without samples, give standard collector
+and multiline behavior (timestamp/timezone handling is out of scope; see FB031). Without samples, give standard collector
 guidance and explicitly report that parser coverage was not executed.
 
 Investigate IaC and downstream configuration yourself; never ask the application
@@ -62,7 +63,7 @@ invent samples, sample counts, or parsed documents.
 For organizations tagged `glb`, state the selected deployment scope and report
 US and AUS evidence separately if both are in scope. Include the Logstash and
 ingest-pipeline files checked and which layer owns parsing, normalization,
-numeric conversion, timestamp handling, and routing. Explicitly list unavailable
+numeric conversion, and routing (timestamp/timezone handling is out of scope). Explicitly list unavailable
 pipeline evidence; repository configuration does not prove deployed state.
 
 ## Current configuration findings
@@ -115,7 +116,7 @@ as production-ready.
 When samples exist, show at least one representative expected parsed document
 for each detected format. Without samples, list expected module fields/types
 without inventing a parsed document.
-Include labels, timestamp, typed parsed values, and routing metadata appropriate
+Include labels, typed parsed values, and routing metadata appropriate
 to the verified topology (nested data_stream fields and event.dataset when
 applicable). Distinguish expected output from actual runtime output.
 
