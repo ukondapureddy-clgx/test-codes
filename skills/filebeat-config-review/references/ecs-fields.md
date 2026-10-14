@@ -1,6 +1,10 @@
 # ECS field and type guidance
 
-Use these stable types when producing recommendations.
+Use these stable types when producing recommendations. This table is not
+exhaustive; for any field produced by the configuration that is not listed
+here, consult the official Elastic Common Schema field reference at
+https://www.elastic.co/guide/en/ecs/current/ecs-field-reference.html to
+confirm the correct ECS field name and type before recommending it.
 
 | Field | Type or expectation |
 |---|---|
