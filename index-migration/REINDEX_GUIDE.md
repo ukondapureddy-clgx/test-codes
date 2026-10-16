@@ -41,7 +41,11 @@ cd scripts/index/index-migration
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-python -m py_compile elasticsearch_index_manager.py   # silent = OK
+
+# Optional sanity check: compiles the script without running it to catch a broken or
+# truncated copy. No output means the file has no syntax errors; any error is printed
+# with a line number.
+python -m py_compile elasticsearch_index_manager.py
 
 # Host is the BARE hostname: no https://, no port
 export H="common-services-es-search-int.solutions.corelogic.com"
