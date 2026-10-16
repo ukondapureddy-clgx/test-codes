@@ -57,46 +57,26 @@ Verify you have the current script (it must contain the `write` block fix):
 grep -n 'block="write"' elasticsearch_index_manager.py   # expect one match
 ```
 
-## Step 1: Find indices that need reindexing (read-only)
+## Step 1: Get the list of indices to reindex
+
+Run the analysis (read-only). It lists indices created before 8.0, with their blocks,
+aliases, version and doc count:
 
 ```bash
 python elasticsearch_index_manager.py --analyze --version-lt 8.0 \
     --host $H --port 443 --api-key "$API_KEY"
 
-# Narrow it down (faster on big clusters), or write CSV output
+# Narrow it down (faster on big clusters)
 python elasticsearch_index_manager.py --analyze --pattern "clp-spatial-dedupe-*" --version-lt 8.0 \
-    --output csv --host $H --port 443 --api-key "$API_KEY"
+    --host $H --port 443 --api-key "$API_KEY"
 ```
 
-The report shows blocks, aliases, creation version and doc count per index.
+Note any index that already has a block (the `Blocks` column) or aliases before you start.
 
-## Step 2: Check the sources are clean
+## Step 2: Copy the indices into the CSV
 
-In Kibana Dev Tools, confirm no leftover `read_only` block exists on the sources
-(an empty `{}` is good):
-
-```
-GET <index1>,<index2>/_settings?filter_path=*.settings.index.blocks
-```
-
-If a `read_only` block exists (for example from an earlier failed run), clear it,
-otherwise the swap fails with `cluster_block_exception ... index read-only (api)`:
-
-```
-PUT <index>/_settings
-{ "index.blocks.read_only": null }
-```
-
-Also delete leftover `<index>_<timestamp>` copies from earlier failed runs:
-
-```
-GET _cat/indices/<prefix>*?v
-DELETE <index>_<timestamp>
-```
-
-## Step 3: Create the CSV
-
-Use the full, exact index names. `created_string` is informational only.
+Use the full, exact index names from the report (the table truncates long names). Keep
+the header and set `Action` to `reindex`. `created_string` is informational only.
 
 ```bash
 cat > reindex.csv <<'EOF'
@@ -107,10 +87,9 @@ cat > reindex.csv <<'EOF'
 EOF
 ```
 
-Actions: `reindex`, `read-only`, `delete`. Use `reindex` here. Do not add a second row
-for the same index. Indices starting with `.` are skipped.
+Do not add a second row for the same index. Indices starting with `.` are skipped.
 
-## Step 4: Dry run (no changes)
+## Step 3: Dry run (no changes)
 
 ```bash
 python elasticsearch_index_manager.py reindex.csv --host $H --port 443 --api-key "$API_KEY" \
@@ -121,7 +100,7 @@ Without `--execute` the script only reads from the cluster and logs
 `[DRY RUN] Would ...` lines. The `ERROR - Index ..._<ts> not found` line during the dry
 run is expected (the target is never created).
 
-## Step 5: Execute
+## Step 4: Execute
 
 Use tmux so an SSH drop does not interrupt it:
 
@@ -147,7 +126,7 @@ Type 'yes' to delete '<index>' and create the alias:
 First run with a small test index, and consider omitting `--swap-original-name` the
 first time so the old index stays until you have checked the copy.
 
-## Step 6: Verify
+## Step 5: Verify
 
 ```
 GET _alias/<index>                      # alias -> <index>_<ts>
@@ -197,13 +176,32 @@ python elasticsearch_index_manager.py --resume-and-complete <TASK_ID> <SOURCE_IN
 Add `--original-pipeline <name>` to restore a `default_pipeline` that was removed during
 the reindex.
 
+## Cleaning up after a failed run
+
+Only needed if an earlier run failed or used an older script. Check for a leftover
+`read_only` block on the source (an empty `{}` is good) and clear it, otherwise the swap
+fails with `cluster_block_exception ... index read-only (api)`:
+
+```
+GET <index>/_settings?filter_path=*.settings.index.blocks
+PUT <index>/_settings
+{ "index.blocks.read_only": null }
+```
+
+Delete leftover `<index>_<timestamp>` copies from failed runs before retrying:
+
+```
+GET _cat/indices/<prefix>*?v
+DELETE <index>_<timestamp>
+```
+
 ## Troubleshooting
 
 | Symptom | Cause / fix |
 | --- | --- |
 | `NotFoundError(404...)` on connect, or `{"statusCode":404,...}` from curl | You are hitting Kibana. Use the Elasticsearch hostname. |
 | `Failed to resolve 'https'` | `--host` contains `https://`. Use the bare hostname and `--port 443`. |
-| `cluster_block_exception ... index read-only (api)` on the swap | A `read_only` block is on the source (old script or leftover). Clear it (Step 2) and make sure `block="write"` is in the script. |
+| `cluster_block_exception ... index read-only (api)` on the swap | A `read_only` block is on the source (from an older script version or a failed run). Clear it (see below) and make sure `block="write"` is in the script. |
 | `security_exception` / `unauthorized` | API key lacks privileges (`manage` on the indices). |
 | Analysis looks stuck | It makes several calls per index. Wait, or narrow with `--pattern`. |
 | `Swap declined` in the log | You did not type `yes`; the old index was kept. |
