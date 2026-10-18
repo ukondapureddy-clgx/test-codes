@@ -279,6 +279,36 @@ class ElasticsearchIndexManager:
             self.logger.error(f"Error getting replica count for {index_name}: {e}")
             return None
     
+    def _remove_write_block(self, index_name: str) -> None:
+        """Re-enable writes on an index after a declined or failed swap."""
+        if self.dry_run:
+            return
+        try:
+            self.es.indices.put_settings(index=index_name, settings={"index": {"blocks.write": None}})
+            self.logger.info(f"Removed write block from {index_name}")
+        except Exception as e:
+            self.logger.error(f"Could not remove write block from {index_name}: {e}")
+
+    def get_refresh_interval(self, index_name: str) -> Optional[str]:
+        """Get the explicitly configured refresh_interval (None means the cluster default)."""
+        settings = self.get_index_settings(index_name)
+        if settings and index_name in settings:
+            return settings[index_name]['settings']['index'].get('refresh_interval')
+        return None
+
+    def set_refresh_interval(self, index_name: str, interval: Optional[str]) -> bool:
+        """Set refresh_interval; None resets it to the cluster default."""
+        if self.dry_run:
+            self.logger.info(f"[DRY RUN] Would set index {index_name} refresh_interval to {interval}")
+            return True
+        try:
+            self.es.indices.put_settings(index=index_name, settings={"index": {"refresh_interval": interval}})
+            self.logger.info(f"Successfully set index {index_name} refresh_interval to {interval}")
+            return True
+        except Exception as e:
+            self.logger.error(f"Error setting refresh_interval for {index_name}: {e}")
+            return False
+
     def get_index_aliases(self, index_name: str) -> List[str]:
         """Get all aliases for an index."""
         try:
@@ -723,7 +753,10 @@ class ElasticsearchIndexManager:
         import time
         start_time = time.time()
         source_index = index_info.provided_name
-        target_index = f"{source_index}_{int(time.time())}"
+        version = 1
+        while self.index_exists(f"{source_index}_v{version}"):
+            version += 1
+        target_index = f"{source_index}_v{version}"
 
         self.logger.info(f"Starting reindex operation for {source_index}")
 
@@ -768,51 +801,60 @@ class ElasticsearchIndexManager:
         self.logger.info(f"Temporarily removing default_pipeline from {target_index} for reindex")
         original_pipeline = self._remove_default_pipeline(target_index)
 
-        # 8. Set target index replicas to 0 for faster reindexing
-        original_replica_count = self.get_replica_count(target_index)
-        self.logger.info(f"Setting target index {target_index} replicas to 0 for faster reindexing")
+        # 8. Remember the source's replicas and refresh interval, then tune the target for bulk loading
+        original_replica_count = self.get_replica_count(source_index)
+        original_refresh_interval = self.get_refresh_interval(source_index)
+        self.logger.info(
+            f"Source {source_index}: replicas={original_replica_count}, "
+            f"refresh_interval={original_refresh_interval or 'default'}"
+        )
+        self.logger.info(f"Setting target index {target_index} replicas to 0 and refresh_interval to -1 for faster reindexing")
         if not self.set_replica_count(target_index, 0):
             self.logger.warning(f"Could not set replica count to 0 for {target_index}, continuing anyway")
+        if not self.set_refresh_interval(target_index, "-1"):
+            self.logger.warning(f"Could not disable refresh for {target_index}, continuing anyway")
 
-        # 9. Perform reindex
-        task_id = self.reindex_data(source_index, target_index)
-        if not task_id:
-            return False
-
-        # 10. Wait for reindex completion
-        if not self.wait_for_reindex_completion(task_id):
-            self.logger.error(f"Reindex operation failed or timed out")
-            return False
-
-        # 11. Refresh target index to make documents available for count
-        try:
-            if not self.dry_run:
-                self.logger.info(f"Refreshing target index {target_index}")
-                self._execute_with_retry(self.es.indices.refresh, "index refresh", index=target_index)
-                self.logger.info(f"Target index {target_index} refreshed successfully")
-                time.sleep(1)  # Brief pause to ensure refresh is processed
-        except Exception as e:
-            self.logger.warning(f"Could not refresh target index {target_index}: {e}")
-
-        # 12. Validate document counts
-        try:
-            validation_result = self._execute_with_retry(self.validate_reindex, "reindex validation", source_index, target_index)
-            if not validation_result:
-                self.logger.error(f"Reindex validation failed for {source_index} -> {target_index}")
+        # 9-12. Copy the data and compare counts; re-run the reindex if the counts differ
+        max_attempts = 3
+        for attempt in range(1, max_attempts + 1):
+            task_id = self.reindex_data(source_index, target_index)
+            if not task_id:
                 return False
-        except Exception as e:
-            self.logger.error(f"Error during reindex validation: {e}")
-            return False
 
-        # 13. Set target index replicas back to 1 (or original count)
-        final_replica_count = 1 if original_replica_count is None else min(original_replica_count, 1)
-        self.logger.info(f"Setting target index {target_index} replicas to {final_replica_count}")
+            if not self.wait_for_reindex_completion(task_id):
+                self.logger.error(f"Reindex operation failed or timed out")
+                return False
+
+            try:
+                if not self.dry_run:
+                    self.logger.info(f"Refreshing target index {target_index}")
+                    self._execute_with_retry(self.es.indices.refresh, "index refresh", index=target_index)
+                    time.sleep(1)
+            except Exception as e:
+                self.logger.warning(f"Could not refresh target index {target_index}: {e}")
+
+            try:
+                if self._execute_with_retry(self.validate_reindex, "reindex validation", source_index, target_index):
+                    break
+            except Exception as e:
+                self.logger.error(f"Error during reindex validation: {e}")
+
+            if attempt == max_attempts:
+                self.logger.error(f"Reindex validation failed for {source_index} -> {target_index} after {max_attempts} attempts")
+                return False
+            self.logger.warning(f"Counts differ; re-running reindex (attempt {attempt + 1} of {max_attempts})")
+
+        # 13. Restore the source's replicas and refresh interval on the target
+        final_replica_count = 1 if original_replica_count is None else original_replica_count
+        self.logger.info(f"Restoring target index {target_index}: replicas={final_replica_count}, refresh_interval={original_refresh_interval or 'default'}")
         try:
             replica_result = self._execute_with_retry(self.set_replica_count, "replica count setting", target_index, final_replica_count)
             if not replica_result:
                 self.logger.warning(f"Could not set replica count to {final_replica_count} for {target_index}")
+            if not self._execute_with_retry(self.set_refresh_interval, "refresh interval setting", target_index, original_refresh_interval):
+                self.logger.warning(f"Could not restore refresh_interval for {target_index}")
         except Exception as e:
-            self.logger.warning(f"Error setting replica count for {target_index}: {e}")
+            self.logger.warning(f"Error restoring settings for {target_index}: {e}")
 
         # 14. Restore default_pipeline to target index
         if original_pipeline:
@@ -839,7 +881,10 @@ class ElasticsearchIndexManager:
         if self.swap_original_name:
             if not self._confirm_swap(source_index, target_index):
                 self.logger.warning(f"Swap declined; {source_index} was kept and {target_index} holds the copy")
+                self._remove_write_block(source_index)
             elif not self._execute_with_retry(self.swap_index_for_alias, "index swap", source_index, target_index):
+                self.logger.error(f"Swap failed for {source_index}; investigate before retrying")
+                self._remove_write_block(source_index)
                 return False
 
         elapsed = time.time() - start_time

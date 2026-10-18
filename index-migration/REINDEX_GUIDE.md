@@ -10,19 +10,24 @@ For each `reindex` row in the CSV, the script:
 
 1. Checks the source index exists and reads its settings, mappings and doc count.
 2. **Blocks writes on the source** (`write` block). Writers get a 403 from here until the swap.
-3. Creates a new index `<source>_<unix timestamp>` with the same settings and mappings
+3. Creates a new index `<source>_v1` (or `_v2`, ... if that name is already taken) with the same settings and mappings
    (the `blocks` setting is not copied, so the new index is writable).
-4. Temporarily removes `default_pipeline` and sets replicas to 0 for speed.
+4. Reads the source's replica count and `refresh_interval`, then on the new index
+   temporarily removes `default_pipeline`, sets replicas to 0 and `refresh_interval` to `-1`.
 5. Runs the reindex task and waits for it to finish.
-6. Refreshes the new index and **validates that doc counts match**.
-7. Restores replicas (1) and `default_pipeline`.
+6. Refreshes the new index and **compares doc counts**. If they differ, the reindex is
+   re-run (up to 3 attempts in total; re-runs overwrite by `_id`, so no duplicates).
+7. Restores the source's replica count and `refresh_interval`, and `default_pipeline`.
 8. Transfers any existing aliases to the new index.
 9. With `--swap-original-name`: shows both doc counts and **asks for confirmation**.
    On `yes`, one atomic `_aliases` call deletes the old index and creates an alias
    with the old name pointing at the new index. Clients using the old name keep working.
+   On success, nothing more is needed.
 
-If you do not confirm (or do not use `--swap-original-name`), the old index is kept
-(write-blocked) and the new `<source>_<timestamp>` index holds the copy.
+If you decline, or the swap fails, the script **removes the write block from the old
+index** so writers can continue, and the new `<source>_v1` index holds the copy.
+Investigate the cause before retrying. If the reindex itself fails, the source stays
+write-blocked; unblock it as shown in "Write outage and blocks".
 
 ## Prerequisites
 
@@ -101,7 +106,7 @@ python elasticsearch_index_manager.py reindex.csv --host $H --port 443 --api-key
 ```
 
 Without `--execute` the script only reads from the cluster and logs
-`[DRY RUN] Would ...` lines. The `ERROR - Index ..._<ts> not found` line during the dry
+`[DRY RUN] Would ...` lines. The `ERROR - Index ..._v1 not found` line during the dry
 run is expected (the target is never created).
 
 ## Step 4: Execute
@@ -117,13 +122,13 @@ python elasticsearch_index_manager.py reindex.csv --host $H --port 443 --api-key
 For each index the script pauses:
 
 ```
-Reindex finished: <index> (N docs) -> <index>_<ts> (N docs)
-Deleting '<index>' is IRREVERSIBLE; '<index>' will become an alias of '<index>_<ts>'.
+Reindex finished: <index> (N docs) -> <index>_v1 (N docs)
+Deleting '<index>' is IRREVERSIBLE; '<index>' will become an alias of '<index>_v1'.
 Type 'yes' to delete '<index>' and create the alias:
 ```
 
 - Type `yes` only if both doc counts match.
-- Anything else keeps the old index; the copy stays as `<index>_<ts>`.
+- Anything else keeps the old index; the copy stays as `<index>_v1`.
 - `--yes` skips the prompt (needed for non-interactive runs). Without it, a run with no
   terminal declines the swap instead of deleting.
 
@@ -133,9 +138,9 @@ first time so the old index stays until you have checked the copy.
 ## Step 5: Verify
 
 ```
-GET _alias/<index>                      # alias -> <index>_<ts>
+GET _alias/<index>                      # alias -> <index>_v1
 GET <index>/_count                      # same count as before
-GET <index>_<ts>/_settings?filter_path=*.settings.index.blocks    # empty = writable
+GET <index>_v1/_settings?filter_path=*.settings.index.blocks    # empty = writable
 GET _cat/indices/<prefix>*?v
 ```
 
@@ -192,11 +197,12 @@ PUT <index>/_settings
 { "index.blocks.read_only": null }
 ```
 
-Delete leftover `<index>_<timestamp>` copies from failed runs before retrying:
+Leftover `<index>_v1` copies from failed runs are not reused; the next run creates `_v2`.
+Delete them to keep the cluster tidy:
 
 ```
 GET _cat/indices/<prefix>*?v
-DELETE <index>_<timestamp>
+DELETE <index>_v1
 ```
 
 ## Troubleshooting
@@ -220,4 +226,4 @@ DELETE <index>_<timestamp>
 | `--swap-original-name` | After a validated reindex, delete the source index and create an alias with its name pointing to the new index. Irreversible. |
 | `--yes` | Skip the confirmation prompt before deleting the source index. |
 
-See `README.md` for the remaining options (analysis filters, resume, authentication).
+See the script's `--help` for the remaining options (analysis filters, resume, authentication).
