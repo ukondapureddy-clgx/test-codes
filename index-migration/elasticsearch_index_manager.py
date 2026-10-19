@@ -26,6 +26,7 @@ Example usage with API key:
 import csv
 import json
 import logging
+import os
 import sys
 import time
 from dataclasses import dataclass
@@ -549,12 +550,20 @@ class ElasticsearchIndexManager:
             
         try:
             reindex_body = {
-                "source": {"index": source_index},
-                "dest": {"index": target_index}
+                "source": {"index": source_index, "size": int(os.getenv("BATCH_SIZE", "5000"))},
+                "dest": {"index": target_index, "op_type": os.getenv("OP_TYPE", "create")},
+                "conflicts": os.getenv("CONFLICTS", "proceed"),
             }
+            slices = os.getenv("SLICES", "auto")
             
-            # Start reindex operation (can be async)
-            result = self.es.reindex(body=reindex_body, wait_for_completion=False)
+            # Always async: the task ID is needed for polling/resume, so WAIT_FOR_COMPLETION is not configurable
+            result = self.es.reindex(
+                body=reindex_body,
+                wait_for_completion=False,
+                requests_per_second=int(os.getenv("REQUESTS_PER_SECOND", "-1")),
+                slices=slices if slices == "auto" else int(slices),
+                scroll=os.getenv("SCROLL", "60m"),
+            )
             
             task_id = result.get('task')
             self.logger.info(f"Reindex task started for {source_index} -> {target_index}")
@@ -1168,8 +1177,8 @@ class ElasticsearchIndexManager:
             
             self.logger.info(f"Processing index {index_name} with action: {action}")
             
-            # Skip system indices (starting with .)
-            if index_name.startswith('.'):
+            # Skip system indices (starting with .) unless INCLUDE_SYSTEM_INDICES=true
+            if index_name.startswith('.') and os.getenv("INCLUDE_SYSTEM_INDICES", "false").lower() != "true":
                 self.logger.info(f"Skipping system index: {index_name}")
                 results['skipped'].append(index_name)
                 continue
