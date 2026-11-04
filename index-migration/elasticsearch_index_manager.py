@@ -26,6 +26,7 @@ Example usage with API key:
 import csv
 import json
 import logging
+import os
 import sys
 import time
 from dataclasses import dataclass
@@ -34,15 +35,6 @@ from typing import Dict, List, Optional, Tuple
 
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import ConnectionError, NotFoundError, RequestError
-
-# Reindex tuning
-BATCH_SIZE = 5000
-REQUESTS_PER_SECOND = -1
-SLICES = "auto"
-WAIT_FOR_COMPLETION = False
-SCROLL = "60m"
-CONFLICTS = "proceed"
-OP_TYPE = "create"
 
 
 @dataclass
@@ -558,18 +550,19 @@ class ElasticsearchIndexManager:
             
         try:
             reindex_body = {
-                "source": {"index": source_index, "size": BATCH_SIZE},
-                "dest": {"index": target_index, "op_type": OP_TYPE},
-                "conflicts": CONFLICTS,
+                "source": {"index": source_index, "size": int(os.getenv("BATCH_SIZE", "5000"))},
+                "dest": {"index": target_index, "op_type": os.getenv("OP_TYPE", "create")},
+                "conflicts": os.getenv("CONFLICTS", "proceed"),
             }
+            slices = os.getenv("SLICES", "auto")
             
-            # Start reindex operation (async)
+            # Always async: the task ID is needed for polling/resume, so WAIT_FOR_COMPLETION is not configurable
             result = self.es.reindex(
                 body=reindex_body,
-                requests_per_second=REQUESTS_PER_SECOND,
-                slices=SLICES,
-                scroll=SCROLL,
-                wait_for_completion=WAIT_FOR_COMPLETION,
+                wait_for_completion=False,
+                requests_per_second=int(os.getenv("REQUESTS_PER_SECOND", "-1")),
+                slices=slices if slices == "auto" else int(slices),
+                scroll=os.getenv("SCROLL", "60m"),
             )
             
             task_id = result.get('task')
@@ -1184,8 +1177,8 @@ class ElasticsearchIndexManager:
             
             self.logger.info(f"Processing index {index_name} with action: {action}")
             
-            # Skip system indices (starting with .)
-            if index_name.startswith('.'):
+            # Skip system indices (starting with .) unless INCLUDE_SYSTEM_INDICES=true
+            if index_name.startswith('.') and os.getenv("INCLUDE_SYSTEM_INDICES", "false").lower() != "true":
                 self.logger.info(f"Skipping system index: {index_name}")
                 results['skipped'].append(index_name)
                 continue

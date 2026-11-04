@@ -151,6 +151,49 @@ python elasticsearch_index_manager.py --analyze --pattern "<prefix>*" \
     --host $H --port 443 --api-key "$API_KEY"
 ```
 
+## Reindex tuning (environment variables)
+
+Optional. Set them on the command line; defaults are shown.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `BATCH_SIZE` | `5000` | Documents per scroll batch (`source.size`). |
+| `REQUESTS_PER_SECOND` | `-1` | Throttle; `-1` is unthrottled. |
+| `SLICES` | `auto` | Parallel slices (`auto` or a number). |
+| `SCROLL` | `60m` | Scroll keep-alive. |
+| `CONFLICTS` | `proceed` | Behaviour on version conflicts. |
+| `OP_TYPE` | `create` | `create` skips documents that already exist in the target. |
+
+The reindex always runs asynchronously (`wait_for_completion=false`) because the script
+polls the task ID, so this is not configurable.
+
+```bash
+BATCH_SIZE=2000 SLICES=4 python elasticsearch_index_manager.py reindex.csv \
+    --host $H --port 443 --api-key "$API_KEY" --execute
+```
+
+## Reindexing system indices (names starting with `.`)
+
+System indices are skipped by default (`Skipping system index`). To include them, set
+`INCLUDE_SYSTEM_INDICES=true` for the run:
+
+```bash
+# Dry run first
+INCLUDE_SYSTEM_INDICES=true python elasticsearch_index_manager.py reindex.csv \
+    --host $H --port 443 --api-key "$API_KEY"
+
+# Execute
+INCLUDE_SYSTEM_INDICES=true python elasticsearch_index_manager.py reindex.csv \
+    --host $H --port 443 --api-key "$API_KEY" --execute
+```
+
+- Put the system index names in `reindex.csv` like any other index.
+- Inside `tmux`, set the variable in the session (or `export` it) before running the script.
+- Take a snapshot first. Elastic recommends the `POST _migration/system_features` API for
+  system indices; use this script only where that is not suitable.
+- Consider running without `--swap-original-name` first and checking the copy, since the
+  swap deletes the original index.
+
 ## Write outage and blocks
 
 - Writes to the source are blocked from step 2 of the process until the swap. Writers
