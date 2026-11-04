@@ -35,6 +35,15 @@ from typing import Dict, List, Optional, Tuple
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import ConnectionError, NotFoundError, RequestError
 
+# Reindex tuning
+BATCH_SIZE = 5000
+REQUESTS_PER_SECOND = -1
+SLICES = "auto"
+WAIT_FOR_COMPLETION = False
+SCROLL = "60m"
+CONFLICTS = "proceed"
+OP_TYPE = "create"
+
 
 @dataclass
 class IndexInfo:
@@ -549,12 +558,19 @@ class ElasticsearchIndexManager:
             
         try:
             reindex_body = {
-                "source": {"index": source_index},
-                "dest": {"index": target_index}
+                "source": {"index": source_index, "size": BATCH_SIZE},
+                "dest": {"index": target_index, "op_type": OP_TYPE},
+                "conflicts": CONFLICTS,
             }
             
-            # Start reindex operation (can be async)
-            result = self.es.reindex(body=reindex_body, wait_for_completion=False)
+            # Start reindex operation (async)
+            result = self.es.reindex(
+                body=reindex_body,
+                requests_per_second=REQUESTS_PER_SECOND,
+                slices=SLICES,
+                scroll=SCROLL,
+                wait_for_completion=WAIT_FOR_COMPLETION,
+            )
             
             task_id = result.get('task')
             self.logger.info(f"Reindex task started for {source_index} -> {target_index}")
